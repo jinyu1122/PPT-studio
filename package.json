@@ -17,9 +17,11 @@
     "@fluentui/react-icons": "^2.0.316",
     "@next/third-parties": "^16.0.1",
     "@opennextjs/cloudflare": "^1.9.0",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "google": "^2.1.0",
+    "lucide-react": "^0.562.0",
     "next": "15.3.8",
     "next-intl": "^4.4.0",
     "react": "19.0.0",
@@ -50,6 +52,5 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "start": "next start",
     "sitemap": "cd tools && node generate-sitemap.js"
-  },
-  "packageManager": "yarn@4.10.3+sha512.c38cafb5c7bb273f3926d04e55e1d8c9dfa7d9c3ea1f36a4868fa028b9e5f72298f0b7f401ad5eb921749eb012eb1c3bb74bf7503df3ee43fd600d14a018266f"
+  }
 }
