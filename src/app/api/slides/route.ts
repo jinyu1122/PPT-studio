@@ -1,34 +1,45 @@
-import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+// Define the slide files statically since we can't use fs in edge runtime
+const SLIDE_FILES = [
+  'slide-1.html',
+  'slide-2.html',
+  'slide-3.html',
+  'slide-4.html',
+  'slide-5.html',
+  'slide-6.html',
+  'slide-7.html',
+  'slide-8.html',
+  'slide-9.html',
+  'slide-10.html',
+];
+
+export async function GET(request: NextRequest) {
   try {
-    const slidesDir = path.join(process.cwd(), 'public', 'slides');
+    // Get the base URL from the request
+    const baseUrl = new URL(request.url).origin;
     
-    // 确保slides目录存在
-    if (!fs.existsSync(slidesDir)) {
-      fs.mkdirSync(slidesDir, { recursive: true });
-    }
-    
-    // 读取所有slide文件
-    const files = fs.readdirSync(slidesDir)
-      .filter(file => file.endsWith('.html'))
-      .sort((a, b) => {
-        const numA = parseInt(a.match(/slide-(\d+)\.html/)?.[1] || '0');
-        const numB = parseInt(b.match(/slide-(\d+)\.html/)?.[1] || '0');
-        return numA - numB;
-      });
-    
-    const slides = files.map(file => {
-      const content = fs.readFileSync(path.join(slidesDir, file), 'utf-8');
+    // Fetch all slides content in parallel
+    const slidePromises = SLIDE_FILES.map(async (file) => {
       const slideNumber = parseInt(file.match(/slide-(\d+)\.html/)?.[1] || '0');
-      return {
-        id: slideNumber,
-        filename: file,
-        content: content
-      };
+      try {
+        const response = await fetch(`${baseUrl}/slides/${file}`);
+        if (!response.ok) {
+          return null;
+        }
+        const content = await response.text();
+        return {
+          id: slideNumber,
+          filename: file,
+          content: content
+        };
+      } catch {
+        return null;
+      }
     });
+    
+    const results = await Promise.all(slidePromises);
+    const slides = results.filter((slide): slide is NonNullable<typeof slide> => slide !== null);
     
     return NextResponse.json({ slides, total: slides.length });
   } catch (error) {
@@ -36,3 +47,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to load slides' }, { status: 500 });
   }
 }
+
+// Enable edge runtime for Cloudflare Workers compatibility
+export const runtime = 'edge';

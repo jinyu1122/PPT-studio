@@ -21,7 +21,9 @@ import {
   SlideLayoutRegular,
   AttachRegular,
   DeleteRegular,
-  StopRegular
+  StopRegular,
+  AddRegular,
+  SubtractRegular
 } from "@fluentui/react-icons";
 import {
   DropdownMenu,
@@ -356,6 +358,7 @@ export default function SlideGenAI() {
   const [currentSlideIndex, setCurrentSlideIndex] = React.useState(0);
   const [isLoadingSlides, setIsLoadingSlides] = React.useState(true);
   const [previewHtml, setPreviewHtml] = React.useState<string>('');
+  const [zoom, setZoom] = React.useState(100);
 
   // Resizable panel state
   const [leftWidth, setLeftWidth] = React.useState(300);
@@ -396,6 +399,10 @@ export default function SlideGenAI() {
       setPreviewHtml(slides[slideIndex].content);
     }
   };
+
+  // Handle zoom
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 10, 200));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 10, 10));
 
   // Handle resizing
   const handleMouseDown = (type: 'left' | 'right') => (e: React.MouseEvent) => {
@@ -702,52 +709,85 @@ export default function SlideGenAI() {
         />
 
         {/* === RIGHT COLUMN: Live Preview === */}
-        <div className={styles.previewArea} style={{ flex: 1 }}>
-          <div className={styles.canvas}>
-            {isLoadingSlides ? (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                flexDirection: 'column',
-                gap: '20px'
-              }}>
-                <SlideLayoutRegular fontSize={48} style={{ opacity: 0.5 }}/>
-                <Text>Loading slides...</Text>
-              </div>
-            ) : previewHtml ? (
-              <iframe
-                srcDoc={previewHtml}
-                style={{
-                  width: '100%',
+        <div className={styles.previewArea} style={{ flex: 1, padding: 0, overflow: 'hidden', position: 'relative' }}>
+          <div style={{
+            width: '100%',
+            height: '100%',
+            overflow: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px'
+          }}>
+            <div className={styles.canvas} style={{ width: `${zoom}%`, maxWidth: 'none', flexShrink: 0 }}>
+              {isLoadingSlides ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   height: '100%',
-                  border: 'none',
-                  borderRadius: tokens.borderRadiusMedium,
-                }}
-                title={`Slide ${currentSlideIndex + 1}`}
-              />
-            ) : (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                flexDirection: 'column',
-                gap: '20px'
-              }}>
-                <SlideLayoutRegular fontSize={48} style={{ opacity: 0.5 }}/>
-                <Text>No slides available</Text>
-              </div>
-            )}
-
-            {/* Canvas Footer */}
-            {slides.length > 0 && (
-              <div style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
-                <Caption1>Page {currentSlideIndex + 1} of {slides.length}</Caption1>
-              </div>
-            )}
+                  flexDirection: 'column',
+                  gap: '20px'
+                }}>
+                  <SlideLayoutRegular fontSize={48} style={{ opacity: 0.5 }}/>
+                  <Text>Loading slides...</Text>
+                </div>
+              ) : previewHtml ? (
+                <iframe
+                  srcDoc={previewHtml}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    borderRadius: tokens.borderRadiusMedium,
+                  }}
+                  title={`Slide ${currentSlideIndex + 1}`}
+                />
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  flexDirection: 'column',
+                  gap: '20px'
+                }}>
+                  <SlideLayoutRegular fontSize={48} style={{ opacity: 0.5 }}/>
+                  <Text>No slides available</Text>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Floating Controls */}
+          {slides.length > 0 && (
+            <div style={{
+              position: 'absolute',
+              bottom: '20px',
+              right: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              backgroundColor: tokens.colorNeutralBackground1,
+              padding: '8px 12px',
+              borderRadius: tokens.borderRadiusMedium,
+              boxShadow: tokens.shadow8,
+              zIndex: 10
+            }}>
+              {/* Zoom Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Button icon={<SubtractRegular />} appearance="subtle" onClick={handleZoomOut} size="small" />
+                <Text style={{ minWidth: '40px', textAlign: 'center' }}>{zoom}%</Text>
+                <Button icon={<AddRegular />} appearance="subtle" onClick={handleZoomIn} size="small" />
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: '1px', height: '16px', backgroundColor: tokens.colorNeutralStroke2 }} />
+
+              {/* Page Info */}
+              <Caption1>Page {currentSlideIndex + 1} of {slides.length}</Caption1>
+            </div>
+          )}
         </div>
 
       </div>
