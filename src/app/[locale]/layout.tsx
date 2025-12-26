@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { GoogleAnalytics } from '@next/third-parties/google';
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
 import { Navbar } from "@/components/navbar";
 import "../globals.css";
-import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,17 +37,8 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <Navbar />
           {children}
-        </NextIntlClientProvider>
-        <GoogleAnalytics gaId={"G-MXGRM7BY6D"} />
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6480994957432778"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
-        <Script
-          src="https://www.google.com/recaptcha/api.js?render=6LfwrzYjAAAAACeMSTxpeZBcYx215acD0diQb9Y9"
-          strategy="lazyOnload"
-        />      </body>
+        </NextIntlClientProvider>    
+      </body>
     </html>
   );
 }
