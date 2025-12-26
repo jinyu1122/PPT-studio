@@ -1,0 +1,20 @@
+{
+    "siteDomain": "ppt-studio.com",
+    "appBrandName": "ppt-studio",
+    "locales": [
+        "en",
+        "zh",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "ja",
+        "ko",
+        "it",
+        "id",
+        "pt"
+    ],
+    "singleLanguageUrls": [
+    ],
+    "multiLanguageUrls": []
+}
