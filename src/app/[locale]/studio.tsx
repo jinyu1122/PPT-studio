@@ -9,9 +9,6 @@ import {
   tokens,
   Button,
   Text,
-  TabList,
-  Tab,
-  Divider,
   Textarea,
   Caption1,
   Subtitle2,
@@ -23,19 +20,99 @@ import {
   MoreHorizontalRegular,
   SlideLayoutRegular,
   AttachRegular,
-  DeleteRegular
+  DeleteRegular,
+  StopRegular
 } from "@fluentui/react-icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+// Types for uploaded files
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+// Types for slides
+interface Slide {
+  id: number;
+  filename: string;
+  content: string;
+}
+
+interface SlidesResponse {
+  slides: Slide[];
+  total: number;
+}
+
+// Type declarations for Web Speech API
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onend: () => void;
+}
+
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: SpeechRecognitionResult;
+  length: number;
+}
+
+interface SpeechRecognitionResult {
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+  length: number;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+  }
+}
 
 // ----------------------------------------------------------------------------
 // 1. 样式定义 (Styles)
 // ----------------------------------------------------------------------------
 const useStyles = makeStyles({
   container: {
-    display: "grid",
-    gridTemplateColumns: "300px 180px 1fr", // 左侧较窄，中间单栏，右侧自适应
+    display: "flex",
     height: "100vh",
     backgroundColor: tokens.colorNeutralBackground1,
     color: tokens.colorNeutralForeground1,
+  },
+  resizer: {
+    width: "4px",
+    backgroundColor: tokens.colorNeutralStroke2,
+    cursor: "col-resize",
+    transition: "background-color 0.2s",
+    ":hover": {
+      backgroundColor: tokens.colorBrandStroke1,
+    },
+  },
+  resizerActive: {
+    backgroundColor: tokens.colorBrandStroke1,
   },
   // 通用面板样式
   panel: {
@@ -98,6 +175,40 @@ const useStyles = makeStyles({
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: "8px",
+    gap: "8px",
+    flexWrap: "wrap",
+    minHeight: "32px",
+  },
+  inputToolbarLeft: {
+    flex: "1",
+    minWidth: "0",
+    overflow: "hidden",
+  },
+  inputToolbarRight: {
+    display: "flex",
+    gap: "8px",
+    flexShrink: "0",
+  },
+  inputResizeHandle: {
+    height: "4px",
+    backgroundColor: tokens.colorNeutralStroke2,
+    cursor: "ns-resize",
+    transition: "background-color 0.2s",
+    ":hover": {
+      backgroundColor: tokens.colorBrandStroke1,
+    },
+    position: "relative",
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      top: "-2px",
+      left: "0",
+      right: "0",
+      height: "8px",
+    },
+  },
+  inputResizeHandleActive: {
+    backgroundColor: tokens.colorBrandStroke1,
   },
 
   // --- 中间：PPT 导航 ---
@@ -107,12 +218,43 @@ const useStyles = makeStyles({
     ...shorthands.borderBottom("1px", "solid", tokens.colorNeutralStroke1),
   },
   navScrollArea: {
-    padding: "16px",
+    padding: "8px 12px", // 减少 padding
     overflowY: "auto",
+    overflowX: "hidden",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: "16px",
+    gap: "12px", // 减少间距
+    maxHeight: "calc(100vh - 100px)", // 确保有足够空间滚动
+    flex: 1, // 占用剩余空间
+    position: "relative",
+  },
+  navScrollContainer: {
+    position: "relative",
+    flex: 1,
+    width: "100%",
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      top: "0",
+      left: "0",
+      right: "0",
+      height: "24px",
+      background: `linear-gradient(to bottom, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground1}CC 50%, transparent 100%)`,
+      zIndex: 10,
+      pointerEvents: "none",
+    },
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      bottom: "0",
+      left: "0",
+      right: "0",
+      height: "24px",
+      background: `linear-gradient(to top, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground1}CC 50%, transparent 100%)`,
+      zIndex: 10,
+      pointerEvents: "none",
+    },
   },
   thumbnailWrapper: {
     position: "relative",
@@ -129,6 +271,17 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground3,
     borderRadius: tokens.borderRadiusSmall,
     ...shorthands.border("1px", "solid", tokens.colorNeutralStroke2),
+    overflow: "hidden",
+    position: "relative",
+  },
+  thumbnailIframe: {
+    border: "none",
+    borderRadius: tokens.borderRadiusSmall,
+    transform: "scale(0.2)",
+    transformOrigin: "top left",
+    width: "500%",
+    height: "500%",
+    pointerEvents: "none",
   },
   thumbnailActive: {
     ...shorthands.border("2px", "solid", tokens.colorBrandStroke1),
@@ -180,14 +333,218 @@ const useStyles = makeStyles({
 
 export default function SlideGenAI() {
   const styles = useStyles();
-  const [selectedMode, setSelectedMode] = React.useState<unknown>("single");
+  const [selectedMode, setSelectedMode] = React.useState<string>("single");
+  const [uploadedFiles, setUploadedFiles] = React.useState<UploadedFile[]>([
+    {
+      id: '1',
+      name: 'Transcription Quality Improvement.doc',
+      type: 'application/msword',
+      size: 1024000
+    }
+  ]);
+  const [isRecording, setIsRecording] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [recognition, setRecognition] = React.useState<SpeechRecognition | null>(null);
+  
+  // Input area resizing state
+  const [inputAreaHeight, setInputAreaHeight] = React.useState(120);
+  const [isResizingInput, setIsResizingInput] = React.useState(false);
+  
+  // Slides state
+  const [slides, setSlides] = React.useState<Slide[]>([]);
+  const [currentSlideIndex, setCurrentSlideIndex] = React.useState(0);
+  const [isLoadingSlides, setIsLoadingSlides] = React.useState(true);
+  const [previewHtml, setPreviewHtml] = React.useState<string>('');
+
+  // Resizable panel state
+  const [leftWidth, setLeftWidth] = React.useState(300);
+  const [middleWidth, setMiddleWidth] = React.useState(180);
+  const [isDragging, setIsDragging] = React.useState<'left' | 'right' | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Load slides from API
+  React.useEffect(() => {
+    const loadSlides = async () => {
+      try {
+        setIsLoadingSlides(true);
+        const response = await fetch('/api/slides');
+        if (response.ok) {
+          const data: SlidesResponse = await response.json();
+          setSlides(data.slides);
+          if (data.slides.length > 0) {
+            setCurrentSlideIndex(0);
+            setPreviewHtml(data.slides[0].content);
+          }
+        } else {
+          console.error('Failed to load slides');
+        }
+      } catch (error) {
+        console.error('Error loading slides:', error);
+      } finally {
+        setIsLoadingSlides(false);
+      }
+    };
+
+    loadSlides();
+  }, []);
+
+  // Handle slide selection
+  const handleSlideSelect = (slideIndex: number) => {
+    if (slideIndex >= 0 && slideIndex < slides.length) {
+      setCurrentSlideIndex(slideIndex);
+      setPreviewHtml(slides[slideIndex].content);
+    }
+  };
+
+  // Handle resizing
+  const handleMouseDown = (type: 'left' | 'right') => (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(type);
+  };
+
+  // Handle input area resize
+  const handleInputResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingInput(true);
+  };
+
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+
+      if (isDragging) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const containerWidth = containerRect.width;
+        const mouseX = e.clientX - containerRect.left;
+
+        if (isDragging === 'left') {
+          const newLeftWidth = Math.max(200, Math.min(mouseX, containerWidth * 0.6));
+          setLeftWidth(newLeftWidth);
+        } else if (isDragging === 'right') {
+          const newMiddleWidth = Math.max(150, Math.min(mouseX - leftWidth, containerWidth * 0.4));
+          setMiddleWidth(newMiddleWidth);
+        }
+      }
+
+      if (isResizingInput) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const mouseY = e.clientY;
+        const containerBottom = containerRect.bottom;
+        const newHeight = Math.max(80, Math.min(300, containerBottom - mouseY));
+        setInputAreaHeight(newHeight);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(null);
+      setIsResizingInput(false);
+    };
+
+    if (isDragging || isResizingInput) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      if (isDragging) {
+        document.body.style.cursor = 'col-resize';
+      } else if (isResizingInput) {
+        document.body.style.cursor = 'ns-resize';
+      }
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging, isResizingInput, leftWidth]);
+
+  // Initialize speech recognition
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognitionConstructor();
+      recognitionInstance.continuous = false;
+      recognitionInstance.interimResults = false;
+      recognitionInstance.lang = 'zh-CN';
+      
+      recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript;
+        setInputValue(prev => prev + ' ' + transcript);
+      };
+      
+      recognitionInstance.onend = () => {
+        setIsRecording(false);
+      };
+      
+      setRecognition(recognitionInstance);
+    }
+  }, []);
+
+  // Handle file deletion
+  const handleDeleteFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+  };
+
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const newFiles: UploadedFile[] = Array.from(files).map(file => ({
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        type: file.type,
+        size: file.size
+      }));
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+    }
+    // Reset the input value to allow uploading the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle attachment button click
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Handle voice recording
+  const handleVoiceRecording = () => {
+    if (!recognition) {
+      alert('语音识别不被支持在此浏览器中');
+      return;
+    }
+
+    if (isRecording) {
+      recognition.stop();
+      setIsRecording(false);
+    } else {
+      recognition.start();
+      setIsRecording(true);
+    }
+  };
 
   return (
     <FluentProvider theme={webDarkTheme}>
-      <div className={styles.container}>
+      <div className={styles.container} ref={containerRef}>
+        
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="*/*"
+          style={{ display: 'none' }}
+          onChange={handleFileUpload}
+        />
         
         {/* === LEFT COLUMN: AI Assistant & Source Files === */}
-        <div className={styles.panel}>
+        <div
+          className={styles.panel}
+          style={{ width: `${leftWidth}px`, minWidth: '200px', maxWidth: '60%' }}
+        >
           
           {/* Header */}
           <div className={styles.leftPanelHeader}>
@@ -198,21 +555,26 @@ export default function SlideGenAI() {
           {/* Source Files Area (Grounding) */}
           <div className={styles.sourceFilesArea}>
             <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Source Context</Caption1>
-            <div className={styles.fileCard}>
-              <DocumentRegular style={{ color: tokens.colorBrandForeground1 }} />
-              <div style={{ flexGrow: 1, overflow: 'hidden' }}>
-                <Text truncate wrap={false} size={200} weight="medium">
-                  Transcription Quality Improvement.doc
-                </Text>
+            {uploadedFiles.map((file) => (
+              <div key={file.id} className={styles.fileCard}>
+                <DocumentRegular style={{ color: tokens.colorBrandForeground1 }} />
+                <div style={{ flexGrow: 1, overflow: 'hidden' }}>
+                  <Text truncate wrap={false} size={200} weight="medium">
+                    {file.name}
+                  </Text>
+                </div>
+                <Button
+                  icon={<DeleteRegular />}
+                  size="small"
+                  appearance="subtle"
+                  onClick={() => handleDeleteFile(file.id)}
+                />
               </div>
-              <Button icon={<DeleteRegular />} size="small" appearance="subtle" />
-            </div>
+            ))}
           </div>
 
-          <Divider />
-
           {/* Chat History */}
-          <div className={styles.chatArea}>
+          <div className={styles.chatArea} style={{ flex: 1, minHeight: 0 }}>
             <div className={styles.chatBubbleUser}>
               <Text>Create a slide summarizing the document.</Text>
             </div>
@@ -221,88 +583,170 @@ export default function SlideGenAI() {
             </div>
           </div>
 
+          {/* Input Area Resize Handle */}
+          <div
+            className={`${styles.inputResizeHandle} ${isResizingInput ? styles.inputResizeHandleActive : ''}`}
+            onMouseDown={handleInputResizeStart}
+          />
+
           {/* Input Area */}
-          <div className={styles.inputArea}>
-            <Textarea 
-              placeholder="Ask AI to edit..." 
-              style={{ width: '100%', minHeight: '60px' }} 
-              resize="vertical"
+          <div className={styles.inputArea} style={{ height: `${inputAreaHeight}px`, minHeight: '80px' }}>
+            <Textarea
+              placeholder="Ask AI to edit..."
+              style={{
+                width: '100%',
+                height: `${inputAreaHeight - 60}px`,
+                minHeight: '40px',
+                resize: 'none'
+              }}
+              resize="none"
+              value={inputValue}
+              onChange={(_, data) => setInputValue(data.value)}
             />
             
             <div className={styles.inputToolbar}>
               {/* Edit Mode Toggle */}
-              <TabList 
-                selectedValue={selectedMode} 
-                onTabSelect={(_, data) => setSelectedMode(data.value)}
-                size="small"
-              >
-                <Tab value="single">Single Page</Tab>
-                <Tab value="global">Global Gen</Tab>
-              </TabList>
+              <div className={styles.inputToolbarLeft}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      appearance="subtle"
+                      size="small"
+                      style={{
+                        minWidth: "120px",
+                        justifyContent: "flex-start",
+                        border: "none",
+                        backgroundColor: "transparent"
+                      }}
+                    >
+                      {selectedMode === "single" ? "Single Page" : "Global Gen"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="top" align="start" className="min-w-[120px]">
+                    <DropdownMenuItem
+                      onClick={() => setSelectedMode("single")}
+                      className={selectedMode === "single" ? "bg-accent" : ""}
+                    >
+                      Single Page
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setSelectedMode("global")}
+                      className={selectedMode === "global" ? "bg-accent" : ""}
+                    >
+                      Global Gen
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
               {/* Tools */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <Button icon={<AttachRegular />} appearance="subtle" />
-                <Button icon={<MicRegular />} appearance="subtle" />
+              <div className={styles.inputToolbarRight}>
+                <Button
+                  icon={<AttachRegular />}
+                  appearance="subtle"
+                  onClick={handleAttachmentClick}
+                />
+                <Button
+                  icon={isRecording ? <StopRegular /> : <MicRegular />}
+                  appearance={isRecording ? "primary" : "subtle"}
+                  onClick={handleVoiceRecording}
+                />
                 <Button icon={<SendRegular />} appearance="primary" />
               </div>
             </div>
           </div>
         </div>
 
+        {/* Left Resizer */}
+        <div
+          className={`${styles.resizer} ${isDragging === 'left' ? styles.resizerActive : ''}`}
+          onMouseDown={handleMouseDown('left')}
+        />
+
         {/* === MIDDLE COLUMN: Slide Navigator (Single Column) === */}
-        <div className={styles.panel} style={{ width: '180px' }}>
+        <div
+          className={styles.panel}
+          style={{ width: `${middleWidth}px`, minWidth: '150px', maxWidth: '400px' }}
+        >
           <div className={styles.navHeader}>
-            <Caption1>12 Slides</Caption1>
+            <Caption1>{isLoadingSlides ? 'Loading...' : `${slides.length} Slides`}</Caption1>
           </div>
-          <div className={styles.navScrollArea}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className={styles.thumbnailWrapper}>
-                <span className={styles.pageNumber}>{i}</span>
-                <div 
-                  className={`${styles.thumbnail} ${i === 3 ? styles.thumbnailActive : ''}`} 
-                />
-              </div>
-            ))}
+          <div className={styles.navScrollContainer}>
+            <div className={styles.navScrollArea}>
+              {slides.map((slide, index) => (
+                <div
+                  key={slide.id}
+                  className={styles.thumbnailWrapper}
+                  onClick={() => handleSlideSelect(index)}
+                >
+                  <span className={styles.pageNumber}>{index + 1}</span>
+                  <div
+                    className={`${styles.thumbnail} ${index === currentSlideIndex ? styles.thumbnailActive : ''}`}
+                  >
+                    <iframe
+                      srcDoc={slide.content}
+                      className={styles.thumbnailIframe}
+                      title={`Thumbnail ${index + 1}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* Right Resizer */}
+        <div
+          className={`${styles.resizer} ${isDragging === 'right' ? styles.resizerActive : ''}`}
+          onMouseDown={handleMouseDown('right')}
+        />
+
         {/* === RIGHT COLUMN: Live Preview === */}
-        <div className={styles.previewArea}>
+        <div className={styles.previewArea} style={{ flex: 1 }}>
           <div className={styles.canvas}>
-            {/* Mock Slide Content */}
-            <Text size={800} weight="bold">Quality Metrics Q3</Text>
-            <Text size={400} style={{ color: tokens.colorNeutralForeground3 }}>Based on transcription analysis</Text>
-            
-            <div className={styles.canvasContent}>
-               <div>
-                  <Text as="p" block style={{ marginBottom: '10px' }}>
-                    • Error rate decreased by 15%
-                  </Text>
-                  <Text as="p" block style={{ marginBottom: '10px' }}>
-                    • User satisfaction up to 4.8/5
-                  </Text>
-                  <Text as="p" block>
-                    • Latency reduced to 200ms
-                  </Text>
-               </div>
-               {/* Mock Chart Area */}
-               <div style={{ 
-                 height: '100%', 
-                 backgroundColor: tokens.colorNeutralBackground3, 
-                 borderRadius: '8px',
-                 display: 'flex', 
-                 alignItems: 'center', 
-                 justifyContent: 'center' 
-               }}>
-                 <SlideLayoutRegular fontSize={48} style={{ opacity: 0.5 }}/>
-               </div>
-            </div>
+            {isLoadingSlides ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                flexDirection: 'column',
+                gap: '20px'
+              }}>
+                <SlideLayoutRegular fontSize={48} style={{ opacity: 0.5 }}/>
+                <Text>Loading slides...</Text>
+              </div>
+            ) : previewHtml ? (
+              <iframe
+                srcDoc={previewHtml}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  borderRadius: tokens.borderRadiusMedium,
+                }}
+                title={`Slide ${currentSlideIndex + 1}`}
+              />
+            ) : (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                flexDirection: 'column',
+                gap: '20px'
+              }}>
+                <SlideLayoutRegular fontSize={48} style={{ opacity: 0.5 }}/>
+                <Text>No slides available</Text>
+              </div>
+            )}
 
             {/* Canvas Footer */}
-            <div style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
-               <Caption1>Page 3</Caption1>
-            </div>
+            {slides.length > 0 && (
+              <div style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
+                <Caption1>Page {currentSlideIndex + 1} of {slides.length}</Caption1>
+              </div>
+            )}
           </div>
         </div>
 

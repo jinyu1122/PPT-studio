@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/theme/white.css">
+    <style>
+        .reveal .slides section {
+            text-align: left;
+        }
+        .reveal h1, .reveal h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .problem-box {
+            background: #e74c3c;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .metric {
+            font-size: 2em;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section>
+                <h2>Current Challenges</h2>
+                <div class="problem-box">
+                    <h3 style="color: white; margin-top: 0;">Key Issues Identified</h3>
+                    <ul style="font-size: 1.1em;">
+                        <li>Word Error Rate (WER): <span class="metric" style="color: white;">23.5%</span></li>
+                        <li>Background noise interference</li>
+                        <li>Accent and dialect recognition gaps</li>
+                        <li>Technical terminology misinterpretation</li>
+                    </ul>
+                </div>
+                <p><strong>Impact:</strong> Reduced user satisfaction and increased manual correction time</p>
+                <p><strong>Customer feedback:</strong> 67% report accuracy concerns</p>
+            </section>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            transition: 'slide'
+        });
+    </script>
+</body>
+</html>

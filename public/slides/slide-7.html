@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/theme/white.css">
+    <style>
+        .reveal .slides section {
+            text-align: left;
+        }
+        .reveal h1, .reveal h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .dataset-info {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .training-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: #f39c12;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section>
+                <h2>Training Data & Model Performance</h2>
+                
+                <div class="dataset-info">
+                    <h3>Training Dataset</h3>
+                    <ul>
+                        <li><strong>Total Hours:</strong> 50,000 hours of diverse audio</li>
+                        <li><strong>Languages:</strong> English, Spanish, Mandarin, French</li>
+                        <li><strong>Domains:</strong> Medical, Legal, Technical, Conversational</li>
+                        <li><strong>Quality:</strong> Human-verified transcriptions</li>
+                    </ul>
+                </div>
+                
+                <div class="training-stats">
+                    <div class="stat-box">
+                        <div class="stat-number">95.2%</div>
+                        <div>Validation Accuracy</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">72hrs</div>
+                        <div>Training Time</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">4.2M</div>
+                        <div>Parameters</div>
+                    </div>
+                </div>
+                
+                <p><strong>Benchmark Results:</strong> Outperforms baseline by 23% on diverse test sets</p>
+            </section>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            transition: 'slide'
+        });
+    </script>
+</body>
+</html>

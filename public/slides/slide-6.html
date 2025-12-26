@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/theme/white.css">
+    <style>
+        .reveal .slides section {
+            text-align: left;
+        }
+        .reveal h1, .reveal h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .architecture-diagram {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .flow-step {
+            background: #3498db;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            display: inline-block;
+            margin: 10px;
+            font-weight: bold;
+        }
+        .arrow {
+            font-size: 2em;
+            color: #3498db;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section>
+                <h2>Technical Architecture</h2>
+                <div class="architecture-diagram">
+                    <div style="margin-bottom: 20px;">
+                        <div class="flow-step">Audio Input</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Preprocessing</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">ASR Model</div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <span class="arrow">↓</span>
+                    </div>
+                    <div>
+                        <div class="flow-step">Post-processing</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Quality Check</div>
+                        <span class="arrow">→</span>
+                        <div class="flow-step">Output</div>
+                    </div>
+                </div>
+                
+                <h3>Key Components</h3>
+                <ul>
+                    <li><strong>Noise Reduction:</strong> Real-time audio enhancement</li>
+                    <li><strong>Multi-model Ensemble:</strong> Whisper + Custom models</li>
+                    <li><strong>Language Model Correction:</strong> Context-aware error fixing</li>
+                    <li><strong>Confidence Scoring:</strong> Quality assurance metrics</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            transition: 'slide'
+        });
+    </script>
+</body>
+</html>
