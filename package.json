@@ -13,6 +13,8 @@
     "publish": true
   },
   "dependencies": {
+    "@fluentui/react-components": "^9.72.9",
+    "@fluentui/react-icons": "^2.0.316",
     "@next/third-parties": "^16.0.1",
     "@opennextjs/cloudflare": "^1.9.0",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
