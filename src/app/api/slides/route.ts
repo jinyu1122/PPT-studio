@@ -47,6 +47,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to load slides' }, { status: 500 });
   }
 }
-
-// Enable edge runtime for Cloudflare Workers compatibility
-export const runtime = 'edge';
