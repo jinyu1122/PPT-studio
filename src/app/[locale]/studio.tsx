@@ -774,34 +774,34 @@ export default function SlideGenAI() {
                 <div className={styles.inputToolbar}>
                   {/* Edit Mode Toggle */}
                   <div className={styles.inputToolbarLeft}>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             appearance="subtle"
                             size="small"
                             style={{
-                              minWidth: "120px",
+                              minWidth: "80px",
                               justifyContent: "flex-start",
                               border: "none",
                               backgroundColor: "transparent"
                             }}
                           >
-                            {selectedMode === "single" ? "Single Page" : "Global Gen"}
+                            {selectedMode === "single" ? "Page" : "Global"}
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent side="top" align="start" className="min-w-[120px]">
+                        <DropdownMenuContent side="top" align="start" className="min-w-[80px]">
                           <DropdownMenuItem
                             onClick={() => setSelectedMode("single")}
                             className={selectedMode === "single" ? "bg-accent" : ""}
                           >
-                            Single Page
+                            Page
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setSelectedMode("global")}
                             className={selectedMode === "global" ? "bg-accent" : ""}
                           >
-                            Global Gen
+                            Global
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -814,23 +814,23 @@ export default function SlideGenAI() {
                               appearance="subtle"
                               size="small"
                               style={{
-                                minWidth: "80px",
+                                minWidth: "60px",
                                 justifyContent: "flex-start",
                                 border: "none",
                                 backgroundColor: "transparent"
                               }}
                             >
-                              Page {selectedPage + 1}
+                              {selectedPage + 1}
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent side="top" align="start" className="min-w-[80px] max-h-[200px] overflow-y-auto">
+                          <DropdownMenuContent side="top" align="start" className="min-w-[60px] max-h-[200px] overflow-y-auto">
                             {slides.map((_, index) => (
                               <DropdownMenuItem
                                 key={index}
                                 onClick={() => setSelectedPage(index)}
                                 className={selectedPage === index ? "bg-accent" : ""}
                               >
-                                Page {index + 1}
+                                {index + 1}
                               </DropdownMenuItem>
                             ))}
                           </DropdownMenuContent>
