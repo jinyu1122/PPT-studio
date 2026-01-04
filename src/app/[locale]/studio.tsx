@@ -25,13 +25,19 @@ import {
   AddRegular,
   SubtractRegular,
   ChevronLeftRegular,
-  ChevronRightRegular
+  ChevronRightRegular,
+  WandRegular,
+  CutRegular,
+  CopyRegular,
+  DocumentCopyRegular,
+  EyeOffRegular
 } from "@fluentui/react-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 // Types for uploaded files
@@ -314,6 +320,16 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     fontSize: "10px",
   },
+  
+  // --- Context Menu Styles ---
+  contextMenu: {
+    backgroundColor: tokens.colorNeutralBackground1,
+    ...shorthands.border("1px", "solid", tokens.colorNeutralStroke1),
+    borderRadius: tokens.borderRadiusMedium,
+    boxShadow: tokens.shadow16,
+    padding: "4px",
+    minWidth: "180px",
+  },
 
   // --- 右侧：预览区域 ---
   previewArea: {
@@ -413,6 +429,11 @@ export default function SlideGenAI() {
   // Collapse state for left panel
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = React.useState(false);
   const [leftWidthBeforeCollapse, setLeftWidthBeforeCollapse] = React.useState(300);
+  
+  // Context menu state
+  const [contextMenuOpen, setContextMenuOpen] = React.useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = React.useState({ x: 0, y: 0 });
+  const [contextMenuSlideIndex, setContextMenuSlideIndex] = React.useState<number | null>(null);
 
   // Toggle left panel collapse
   const toggleLeftPanel = () => {
@@ -471,6 +492,60 @@ export default function SlideGenAI() {
   // Handle zoom
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 10, 200));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 10, 10));
+  
+  // Handle context menu
+  const handleContextMenu = (e: React.MouseEvent, slideIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setContextMenuSlideIndex(slideIndex);
+    setContextMenuOpen(true);
+  };
+  
+  // Close context menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenuOpen) {
+        setContextMenuOpen(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [contextMenuOpen]);
+  
+  // Context menu handlers (UI only, no behavior implemented)
+  const handleAIRewrite = () => {
+    console.log('AI Rewrite clicked for slide:', contextMenuSlideIndex);
+    setContextMenuOpen(false);
+  };
+  
+  const handleCut = () => {
+    console.log('Cut clicked for slide:', contextMenuSlideIndex);
+    setContextMenuOpen(false);
+  };
+  
+  const handleCopy = () => {
+    console.log('Copy clicked for slide:', contextMenuSlideIndex);
+    setContextMenuOpen(false);
+  };
+  
+  const handleDuplicate = () => {
+    console.log('Duplicate clicked for slide:', contextMenuSlideIndex);
+    setContextMenuOpen(false);
+  };
+  
+  const handleHide = () => {
+    console.log('Hide clicked for slide:', contextMenuSlideIndex);
+    setContextMenuOpen(false);
+  };
+  
+  const handleDeleteSlide = () => {
+    console.log('Delete clicked for slide:', contextMenuSlideIndex);
+    setContextMenuOpen(false);
+  };
 
   // Handle resizing
   const handleMouseDown = (type: 'left' | 'right') => (e: React.MouseEvent) => {
@@ -675,7 +750,11 @@ export default function SlideGenAI() {
 
   return (
     <FluentProvider theme={webDarkTheme}>
-      <div className={styles.container} ref={containerRef}>
+      <div
+        className={styles.container}
+        ref={containerRef}
+        onContextMenu={(e) => e.preventDefault()}
+      >
         
         {/* Hidden file input */}
         <input
@@ -885,6 +964,7 @@ export default function SlideGenAI() {
                   key={slide.id}
                   className={styles.thumbnailWrapper}
                   onClick={() => handleSlideSelect(index)}
+                  onContextMenu={(e) => handleContextMenu(e, index)}
                 >
                   <span className={styles.pageNumber}>{index + 1}</span>
                   <div
@@ -989,6 +1069,166 @@ export default function SlideGenAI() {
             </div>
           )}
         </div>
+
+        {/* Context Menu */}
+        {contextMenuOpen && contextMenuSlideIndex !== null && (
+          <div
+            style={{
+              position: 'fixed',
+              left: `${contextMenuPosition.x}px`,
+              top: `${contextMenuPosition.y}px`,
+              zIndex: 9999,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.contextMenu}>
+              <div
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  borderRadius: tokens.borderRadiusSmall,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = tokens.colorNeutralBackground1Hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                onClick={handleAIRewrite}
+              >
+                <WandRegular fontSize={16} />
+                <Text>AI rewrite</Text>
+              </div>
+              
+              <div style={{
+                height: '1px',
+                backgroundColor: tokens.colorNeutralStroke2,
+                margin: '4px 0'
+              }} />
+              
+              <div
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  borderRadius: tokens.borderRadiusSmall,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = tokens.colorNeutralBackground1Hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                onClick={handleCut}
+              >
+                <CutRegular fontSize={16} />
+                <Text>Cut</Text>
+              </div>
+              
+              <div
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  borderRadius: tokens.borderRadiusSmall,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = tokens.colorNeutralBackground1Hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                onClick={handleCopy}
+              >
+                <CopyRegular fontSize={16} />
+                <Text>Copy</Text>
+              </div>
+              
+              <div
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  borderRadius: tokens.borderRadiusSmall,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = tokens.colorNeutralBackground1Hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                onClick={handleDuplicate}
+              >
+                <DocumentCopyRegular fontSize={16} />
+                <Text>Duplicate</Text>
+              </div>
+              
+              <div
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  borderRadius: tokens.borderRadiusSmall,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = tokens.colorNeutralBackground1Hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                onClick={handleHide}
+              >
+                <EyeOffRegular fontSize={16} />
+                <Text>Hide</Text>
+              </div>
+              
+              <div style={{
+                height: '1px',
+                backgroundColor: tokens.colorNeutralStroke2,
+                margin: '4px 0'
+              }} />
+              
+              <div
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  borderRadius: tokens.borderRadiusSmall,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'background-color 0.2s',
+                  color: tokens.colorPaletteRedForeground1,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = tokens.colorNeutralBackground1Hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                onClick={handleDeleteSlide}
+              >
+                <DeleteRegular fontSize={16} />
+                <Text>Delete</Text>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </FluentProvider>
