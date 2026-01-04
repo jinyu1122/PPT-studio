@@ -23,7 +23,9 @@ import {
   DeleteRegular,
   StopRegular,
   AddRegular,
-  SubtractRegular
+  SubtractRegular,
+  ChevronLeftRegular,
+  ChevronRightRegular
 } from "@fluentui/react-icons";
 import {
   DropdownMenu,
@@ -129,6 +131,22 @@ const useStyles = makeStyles({
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  leftPanelCollapsed: {
+    width: "48px !important",
+    minWidth: "48px !important",
+    maxWidth: "48px !important",
+  },
+  collapsedContent: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "16px 8px",
+  },
+  collapseButton: {
+    minWidth: "32px",
+    width: "32px",
+    height: "32px",
   },
   sourceFilesArea: {
     padding: "0 16px 16px 16px",
@@ -391,6 +409,23 @@ export default function SlideGenAI() {
   const [middleWidth, setMiddleWidth] = React.useState(180);
   const [isDragging, setIsDragging] = React.useState<'left' | 'right' | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  
+  // Collapse state for left panel
+  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = React.useState(false);
+  const [leftWidthBeforeCollapse, setLeftWidthBeforeCollapse] = React.useState(300);
+
+  // Toggle left panel collapse
+  const toggleLeftPanel = () => {
+    if (isLeftPanelCollapsed) {
+      // Expand
+      setLeftWidth(leftWidthBeforeCollapse);
+      setIsLeftPanelCollapsed(false);
+    } else {
+      // Collapse
+      setLeftWidthBeforeCollapse(leftWidth);
+      setIsLeftPanelCollapsed(true);
+    }
+  };
 
   // Auto-scroll chat to bottom when new messages are added
   React.useEffect(() => {
@@ -654,159 +689,179 @@ export default function SlideGenAI() {
         
         {/* === LEFT COLUMN: AI Assistant & Source Files === */}
         <div
-          className={styles.panel}
-          style={{ width: `${leftWidth}px`, minWidth: '200px', maxWidth: '60%' }}
+          className={`${styles.panel} ${isLeftPanelCollapsed ? styles.leftPanelCollapsed : ''}`}
+          style={isLeftPanelCollapsed ? {} : { width: `${leftWidth}px`, minWidth: '200px', maxWidth: '60%' }}
         >
           
-          {/* Header */}
-          <div className={styles.leftPanelHeader}>
-            <Subtitle2>AI Copilot</Subtitle2>
-            <Button icon={<MoreHorizontalRegular />} appearance="subtle" />
-          </div>
-
-          {/* Source Files Area (Grounding) */}
-          <div className={styles.sourceFilesArea}>
-            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Source Context</Caption1>
-            {uploadedFiles.map((file) => (
-              <div key={file.id} className={styles.fileCard}>
-                <DocumentRegular style={{ color: tokens.colorBrandForeground1 }} />
-                <div style={{ flexGrow: 1, overflow: 'hidden' }}>
-                  <Text truncate wrap={false} size={200} weight="medium">
-                    {file.name}
-                  </Text>
-                </div>
-                <Button
-                  icon={<DeleteRegular />}
-                  size="small"
-                  appearance="subtle"
-                  onClick={() => handleDeleteFile(file.id)}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Chat History */}
-          <div ref={chatAreaRef} className={styles.chatArea} style={{ flex: 1, minHeight: 0 }}>
-            {chatMessages.map((message) => (
-              <div
-                key={message.id}
-                className={message.type === 'user' ? styles.chatBubbleUser : styles.chatBubbleAi}
-              >
-                <Text>{message.content}</Text>
-              </div>
-            ))}
-          </div>
-
-          {/* Input Area Resize Handle */}
-          <div
-            className={`${styles.inputResizeHandle} ${isResizingInput ? styles.inputResizeHandleActive : ''}`}
-            onMouseDown={handleInputResizeStart}
-          />
-
-          {/* Input Area */}
-          <div className={styles.inputArea} style={{ height: `${inputAreaHeight}px`, minHeight: '80px' }}>
-            <Textarea
-              placeholder="Ask AI to edit..."
-              style={{
-                width: '100%',
-                height: `${inputAreaHeight - 60}px`,
-                minHeight: '40px',
-                resize: 'none'
-              }}
-              resize="none"
-              value={inputValue}
-              onChange={(_, data) => setInputValue(data.value)}
-            />
-            
-            <div className={styles.inputToolbar}>
-              {/* Edit Mode Toggle */}
-              <div className={styles.inputToolbarLeft}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        appearance="subtle"
-                        size="small"
-                        style={{
-                          minWidth: "120px",
-                          justifyContent: "flex-start",
-                          border: "none",
-                          backgroundColor: "transparent"
-                        }}
-                      >
-                        {selectedMode === "single" ? "Single Page" : "Global Gen"}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent side="top" align="start" className="min-w-[120px]">
-                      <DropdownMenuItem
-                        onClick={() => setSelectedMode("single")}
-                        className={selectedMode === "single" ? "bg-accent" : ""}
-                      >
-                        Single Page
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setSelectedMode("global")}
-                        className={selectedMode === "global" ? "bg-accent" : ""}
-                      >
-                        Global Gen
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Page selector - only show when Single Page mode is selected */}
-                  {selectedMode === "single" && slides.length > 0 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          appearance="subtle"
-                          size="small"
-                          style={{
-                            minWidth: "80px",
-                            justifyContent: "flex-start",
-                            border: "none",
-                            backgroundColor: "transparent"
-                          }}
-                        >
-                          Page {selectedPage + 1}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="top" align="start" className="min-w-[80px] max-h-[200px] overflow-y-auto">
-                        {slides.map((_, index) => (
-                          <DropdownMenuItem
-                            key={index}
-                            onClick={() => setSelectedPage(index)}
-                            className={selectedPage === index ? "bg-accent" : ""}
-                          >
-                            Page {index + 1}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </div>
-
-              {/* Tools */}
-              <div className={styles.inputToolbarRight}>
-                <Button
-                  icon={<AttachRegular />}
-                  appearance="subtle"
-                  onClick={handleAttachmentClick}
-                />
-                <Button
-                  icon={isRecording ? <StopRegular /> : <MicRegular />}
-                  appearance={isRecording ? "primary" : "subtle"}
-                  onClick={handleVoiceRecording}
-                />
-                <Button
-                  icon={<SendRegular />}
-                  appearance="primary"
-                  onClick={handleSend}
-                  disabled={!inputValue.trim()}
-                />
-              </div>
+          {isLeftPanelCollapsed ? (
+            // Collapsed view - only show toggle button
+            <div className={styles.collapsedContent}>
+              <Button
+                icon={<ChevronRightRegular />}
+                appearance="subtle"
+                onClick={toggleLeftPanel}
+                className={styles.collapseButton}
+                title="Expand panel"
+              />
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className={styles.leftPanelHeader}>
+                <Subtitle2>AI Copilot</Subtitle2>
+                <Button
+                  icon={<ChevronLeftRegular />}
+                  appearance="subtle"
+                  onClick={toggleLeftPanel}
+                  title="Collapse panel"
+                />
+              </div>
+
+              {/* Source Files Area (Grounding) */}
+              <div className={styles.sourceFilesArea}>
+                <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>Source Context</Caption1>
+                {uploadedFiles.map((file) => (
+                  <div key={file.id} className={styles.fileCard}>
+                    <DocumentRegular style={{ color: tokens.colorBrandForeground1 }} />
+                    <div style={{ flexGrow: 1, overflow: 'hidden' }}>
+                      <Text truncate wrap={false} size={200} weight="medium">
+                        {file.name}
+                      </Text>
+                    </div>
+                    <Button
+                      icon={<DeleteRegular />}
+                      size="small"
+                      appearance="subtle"
+                      onClick={() => handleDeleteFile(file.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Chat History */}
+              <div ref={chatAreaRef} className={styles.chatArea} style={{ flex: 1, minHeight: 0 }}>
+                {chatMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={message.type === 'user' ? styles.chatBubbleUser : styles.chatBubbleAi}
+                  >
+                    <Text>{message.content}</Text>
+                  </div>
+                ))}
+              </div>
+
+              {/* Input Area Resize Handle */}
+              <div
+                className={`${styles.inputResizeHandle} ${isResizingInput ? styles.inputResizeHandleActive : ''}`}
+                onMouseDown={handleInputResizeStart}
+              />
+
+              {/* Input Area */}
+              <div className={styles.inputArea} style={{ height: `${inputAreaHeight}px`, minHeight: '80px' }}>
+                <Textarea
+                  placeholder="Ask AI to edit..."
+                  style={{
+                    width: '100%',
+                    height: `${inputAreaHeight - 60}px`,
+                    minHeight: '40px',
+                    resize: 'none'
+                  }}
+                  resize="none"
+                  value={inputValue}
+                  onChange={(_, data) => setInputValue(data.value)}
+                />
+                
+                <div className={styles.inputToolbar}>
+                  {/* Edit Mode Toggle */}
+                  <div className={styles.inputToolbarLeft}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            appearance="subtle"
+                            size="small"
+                            style={{
+                              minWidth: "120px",
+                              justifyContent: "flex-start",
+                              border: "none",
+                              backgroundColor: "transparent"
+                            }}
+                          >
+                            {selectedMode === "single" ? "Single Page" : "Global Gen"}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="top" align="start" className="min-w-[120px]">
+                          <DropdownMenuItem
+                            onClick={() => setSelectedMode("single")}
+                            className={selectedMode === "single" ? "bg-accent" : ""}
+                          >
+                            Single Page
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setSelectedMode("global")}
+                            className={selectedMode === "global" ? "bg-accent" : ""}
+                          >
+                            Global Gen
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      {/* Page selector - only show when Single Page mode is selected */}
+                      {selectedMode === "single" && slides.length > 0 && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              appearance="subtle"
+                              size="small"
+                              style={{
+                                minWidth: "80px",
+                                justifyContent: "flex-start",
+                                border: "none",
+                                backgroundColor: "transparent"
+                              }}
+                            >
+                              Page {selectedPage + 1}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent side="top" align="start" className="min-w-[80px] max-h-[200px] overflow-y-auto">
+                            {slides.map((_, index) => (
+                              <DropdownMenuItem
+                                key={index}
+                                onClick={() => setSelectedPage(index)}
+                                className={selectedPage === index ? "bg-accent" : ""}
+                              >
+                                Page {index + 1}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tools */}
+                  <div className={styles.inputToolbarRight}>
+                    <Button
+                      icon={<AttachRegular />}
+                      appearance="subtle"
+                      onClick={handleAttachmentClick}
+                    />
+                    <Button
+                      icon={isRecording ? <StopRegular /> : <MicRegular />}
+                      appearance={isRecording ? "primary" : "subtle"}
+                      onClick={handleVoiceRecording}
+                    />
+                    <Button
+                      icon={<SendRegular />}
+                      appearance="primary"
+                      onClick={handleSend}
+                      disabled={!inputValue.trim()}
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Left Resizer */}
