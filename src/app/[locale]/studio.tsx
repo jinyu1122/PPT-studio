@@ -333,9 +333,18 @@ const useStyles = makeStyles({
 // 2. 组件实现
 // ----------------------------------------------------------------------------
 
+// Chat message type
+interface ChatMessage {
+  id: string;
+  type: 'user' | 'ai';
+  content: string;
+  timestamp: number;
+}
+
 export default function SlideGenAI() {
   const styles = useStyles();
   const [selectedMode, setSelectedMode] = React.useState<string>("single");
+  const [selectedPage, setSelectedPage] = React.useState<number>(0);
   const [uploadedFiles, setUploadedFiles] = React.useState<UploadedFile[]>([
     {
       id: '1',
@@ -348,6 +357,23 @@ export default function SlideGenAI() {
   const [inputValue, setInputValue] = React.useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [recognition, setRecognition] = React.useState<SpeechRecognition | null>(null);
+  
+  // Chat history state
+  const [chatMessages, setChatMessages] = React.useState<ChatMessage[]>([
+    {
+      id: '1',
+      type: 'user',
+      content: 'Create a slide summarizing the document.',
+      timestamp: Date.now() - 60000
+    },
+    {
+      id: '2',
+      type: 'ai',
+      content: 'I\'ve analyzed "Transcription Quality Improvement.doc". Here is a summary slide covering the key metrics.',
+      timestamp: Date.now() - 59000
+    }
+  ]);
+  const chatAreaRef = React.useRef<HTMLDivElement>(null);
   
   // Input area resizing state
   const [inputAreaHeight, setInputAreaHeight] = React.useState(120);
@@ -365,6 +391,13 @@ export default function SlideGenAI() {
   const [middleWidth, setMiddleWidth] = React.useState(180);
   const [isDragging, setIsDragging] = React.useState<'left' | 'right' | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-scroll chat to bottom when new messages are added
+  React.useEffect(() => {
+    if (chatAreaRef.current) {
+      chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
 
   // Load slides from API
   React.useEffect(() => {
@@ -533,6 +566,78 @@ export default function SlideGenAI() {
     }
   };
 
+  // Handle send button click
+  const handleSend = async () => {
+    if (!inputValue.trim()) {
+      return;
+    }
+
+    const userMessage = inputValue.trim();
+    const page = selectedMode === "global" ? -1 : selectedPage;
+
+    // Add user message to chat
+    const userChatMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: userMessage,
+      timestamp: Date.now()
+    };
+    setChatMessages(prev => [...prev, userChatMessage]);
+    
+    // Clear input immediately
+    setInputValue('');
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: userMessage,
+          page: page
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json() as { success?: boolean; message?: string };
+        console.log('Generation response:', data);
+        
+        // Add AI response to chat
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: data.message || 'Request processed successfully.',
+          timestamp: Date.now()
+        };
+        setChatMessages(prev => [...prev, aiMessage]);
+      } else {
+        const errorData = await response.json() as { error?: string };
+        console.error('Generation error:', errorData);
+        
+        // Add error message to chat
+        const errorMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: `Error: ${errorData.error || 'Failed to process request'}`,
+          timestamp: Date.now()
+        };
+        setChatMessages(prev => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Error sending request:', error);
+      
+      // Add error message to chat
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: 'Error: Failed to send request. Please try again.',
+        timestamp: Date.now()
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
   return (
     <FluentProvider theme={webDarkTheme}>
       <div className={styles.container} ref={containerRef}>
@@ -581,13 +686,15 @@ export default function SlideGenAI() {
           </div>
 
           {/* Chat History */}
-          <div className={styles.chatArea} style={{ flex: 1, minHeight: 0 }}>
-            <div className={styles.chatBubbleUser}>
-              <Text>Create a slide summarizing the document.</Text>
-            </div>
-            <div className={styles.chatBubbleAi}>
-              <Text>I&apos;ve analyzed &quot;Transcription Quality Improvement.doc&quot;. Here is a summary slide covering the key metrics.</Text>
-            </div>
+          <div ref={chatAreaRef} className={styles.chatArea} style={{ flex: 1, minHeight: 0 }}>
+            {chatMessages.map((message) => (
+              <div
+                key={message.id}
+                className={message.type === 'user' ? styles.chatBubbleUser : styles.chatBubbleAi}
+              >
+                <Text>{message.content}</Text>
+              </div>
+            ))}
           </div>
 
           {/* Input Area Resize Handle */}
@@ -614,36 +721,69 @@ export default function SlideGenAI() {
             <div className={styles.inputToolbar}>
               {/* Edit Mode Toggle */}
               <div className={styles.inputToolbarLeft}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      appearance="subtle"
-                      size="small"
-                      style={{
-                        minWidth: "120px",
-                        justifyContent: "flex-start",
-                        border: "none",
-                        backgroundColor: "transparent"
-                      }}
-                    >
-                      {selectedMode === "single" ? "Single Page" : "Global Gen"}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent side="top" align="start" className="min-w-[120px]">
-                    <DropdownMenuItem
-                      onClick={() => setSelectedMode("single")}
-                      className={selectedMode === "single" ? "bg-accent" : ""}
-                    >
-                      Single Page
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setSelectedMode("global")}
-                      className={selectedMode === "global" ? "bg-accent" : ""}
-                    >
-                      Global Gen
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        appearance="subtle"
+                        size="small"
+                        style={{
+                          minWidth: "120px",
+                          justifyContent: "flex-start",
+                          border: "none",
+                          backgroundColor: "transparent"
+                        }}
+                      >
+                        {selectedMode === "single" ? "Single Page" : "Global Gen"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="top" align="start" className="min-w-[120px]">
+                      <DropdownMenuItem
+                        onClick={() => setSelectedMode("single")}
+                        className={selectedMode === "single" ? "bg-accent" : ""}
+                      >
+                        Single Page
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSelectedMode("global")}
+                        className={selectedMode === "global" ? "bg-accent" : ""}
+                      >
+                        Global Gen
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Page selector - only show when Single Page mode is selected */}
+                  {selectedMode === "single" && slides.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          appearance="subtle"
+                          size="small"
+                          style={{
+                            minWidth: "80px",
+                            justifyContent: "flex-start",
+                            border: "none",
+                            backgroundColor: "transparent"
+                          }}
+                        >
+                          Page {selectedPage + 1}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="top" align="start" className="min-w-[80px] max-h-[200px] overflow-y-auto">
+                        {slides.map((_, index) => (
+                          <DropdownMenuItem
+                            key={index}
+                            onClick={() => setSelectedPage(index)}
+                            className={selectedPage === index ? "bg-accent" : ""}
+                          >
+                            Page {index + 1}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
 
               {/* Tools */}
@@ -658,7 +798,12 @@ export default function SlideGenAI() {
                   appearance={isRecording ? "primary" : "subtle"}
                   onClick={handleVoiceRecording}
                 />
-                <Button icon={<SendRegular />} appearance="primary" />
+                <Button
+                  icon={<SendRegular />}
+                  appearance="primary"
+                  onClick={handleSend}
+                  disabled={!inputValue.trim()}
+                />
               </div>
             </div>
           </div>
