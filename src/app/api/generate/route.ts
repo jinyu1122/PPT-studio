@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json() as { prompt: unknown; page: unknown };
     const { prompt, page } = body;
     console.log(prompt);
     // Validate input
