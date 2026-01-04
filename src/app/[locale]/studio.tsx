@@ -17,7 +17,6 @@ import {
   MicRegular,
   SendRegular,
   DocumentRegular,
-  MoreHorizontalRegular,
   SlideLayoutRegular,
   AttachRegular,
   DeleteRegular,
@@ -37,7 +36,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 // Types for uploaded files
